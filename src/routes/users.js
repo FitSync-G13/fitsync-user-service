@@ -8,8 +8,9 @@ const { validate, schemas } = require('../middleware/validation');
 router.get('/me', authenticate, userController.getMe);
 router.put('/me', authenticate, validate(schemas.updateProfile), userController.updateMe);
 
-// Admin routes
-router.get('/', authenticate, authorize('admin', 'gym_owner'), userController.listUsers);
+// Admin routes - Allow all authenticated users to list (controller will filter appropriately)
+router.get('/', authenticate, userController.listUsers);
+router.get('/gyms', authenticate, userController.listGyms);
 router.get('/:id', authenticate, authorize('admin', 'gym_owner', 'trainer'), userController.getUserById);
 router.put('/:id/role', authenticate, authorize('admin'), validate(schemas.updateRole), userController.updateUserRole);
 router.delete('/:id', authenticate, authorize('admin'), userController.deleteUser);

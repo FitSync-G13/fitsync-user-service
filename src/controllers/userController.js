@@ -326,3 +326,49 @@ exports.deleteUser = async (req, res) => {
     });
   }
 };
+
+/**
+ * List all gyms
+ */
+exports.listGyms = async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const [dataResult, countResult] = await Promise.all([
+      db.query(
+        `SELECT id, name, description, address, phone, email, website,
+                amenities, opening_hours, created_at
+         FROM gyms
+         ORDER BY name ASC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      ),
+      db.query('SELECT COUNT(*) FROM gyms')
+    ]);
+
+    const totalCount = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.json({
+      success: true,
+      data: dataResult.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total_count: totalCount,
+        total_pages: totalPages
+      }
+    });
+  } catch (error) {
+    logger.error('List gyms error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_FAILED',
+        message: 'Failed to fetch gyms',
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+};
