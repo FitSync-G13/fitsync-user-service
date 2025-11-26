@@ -372,3 +372,148 @@ exports.listGyms = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get multiple users by IDs (batch fetch for inter-service communication)
+ */
+exports.getUsersBatch = async (req, res) => {
+  try {
+    const { user_ids } = req.body;
+
+    if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'user_ids must be a non-empty array',
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    if (user_ids.length > 100) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'TOO_MANY_IDS',
+          message: 'Maximum 100 user IDs allowed per batch request',
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    const placeholders = user_ids.map((_, i) => `$${i + 1}`).join(',');
+    const result = await db.query(
+      `SELECT id, email, role, first_name, last_name, phone, profile_image_url, gym_id, is_active
+       FROM users WHERE id IN (${placeholders})`,
+      user_ids
+    );
+
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    logger.error('Batch get users error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_FAILED',
+        message: 'Failed to fetch users',
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+};
+
+/**
+ * Get role-specific information for a user
+ */
+exports.getUserRoleInfo = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const userResult = await db.query(
+      'SELECT id, role, first_name, last_name FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User not found',
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    const user = userResult.rows[0];
+    let roleSpecificData = {};
+
+    switch (user.role) {
+      case 'trainer':
+        const trainerResult = await db.query(
+          `SELECT certifications, specializations, years_experience, bio, rating
+           FROM trainer_profiles WHERE user_id = $1`,
+          [id]
+        );
+        roleSpecificData = trainerResult.rows[0] || {
+          certifications: [],
+          specializations: [],
+          years_experience: 0,
+          bio: null,
+          rating: null
+        };
+        break;
+
+      case 'client':
+        const clientResult = await db.query(
+          `SELECT health_clearance, emergency_contact, fitness_level, goals
+           FROM client_profiles WHERE user_id = $1`,
+          [id]
+        );
+        roleSpecificData = clientResult.rows[0] || {
+          health_clearance: false,
+          emergency_contact: null,
+          fitness_level: null,
+          goals: []
+        };
+        break;
+
+      case 'gym_owner':
+      case 'admin':
+        // For gym owners and admins, return basic info
+        roleSpecificData = {
+          role: user.role,
+          permissions: ['full_access']
+        };
+        break;
+
+      default:
+        roleSpecificData = { role: user.role };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user_id: user.id,
+        name: `${user.first_name} ${user.last_name}`,
+        role: user.role,
+        ...roleSpecificData
+      }
+    });
+  } catch (error) {
+    logger.error('Get user role info error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_FAILED',
+        message: 'Failed to fetch role information',
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+};

@@ -8,10 +8,14 @@ const { validate, schemas } = require('../middleware/validation');
 router.get('/me', authenticate, userController.getMe);
 router.put('/me', authenticate, validate(schemas.updateProfile), userController.updateMe);
 
+// Batch and role-info routes (for inter-service communication)
+router.post('/batch', authenticate, userController.getUsersBatch);
+router.get('/:id/role-info', authenticate, userController.getUserRoleInfo);
+
 // Admin routes - Allow all authenticated users to list (controller will filter appropriately)
 router.get('/', authenticate, userController.listUsers);
 router.get('/gyms', authenticate, userController.listGyms);
-router.get('/:id', authenticate, authorize('admin', 'gym_owner', 'trainer'), userController.getUserById);
+router.get('/:id', authenticate, userController.getUserById);
 router.put('/:id/role', authenticate, authorize('admin'), validate(schemas.updateRole), userController.updateUserRole);
 router.delete('/:id', authenticate, authorize('admin'), userController.deleteUser);
 
