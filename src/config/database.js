@@ -1,19 +1,36 @@
 const { Pool } = require('pg');
 const logger = require('./logger');
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'userdb',
-  user: process.env.DB_USER || 'fitsync',
-  password: process.env.DB_PASSWORD || 'fitsync123',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+// Support both connection string and individual parameters
+const getConnectionConfig = () => {
+  if (process.env.DATABASE_URL) {
+    // Use connection string if provided
+    return {
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false  // Allow insecure certs for development
+      }
+    };
+  }
+
+  // Build connection string from individual parameters
+  const { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
+  const connectionString = `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require`;
+
+  return {
+    connectionString: connectionString,
+    ssl: {
+      rejectUnauthorized: false  // Allow insecure certs for development
+    }
+  };
+};
+
+const config = getConnectionConfig();
+
+const pool = new Pool(config);
 
 pool.on('connect', () => {
-  logger.info('Database connected successfully');
+  logger.info('Database connection established with TLS');
 });
 
 pool.on('error', (err) => {
@@ -21,7 +38,4 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
-module.exports = {
-  query: (text, params) => pool.query(text, params),
-  pool
-};
+module.exports = pool;
