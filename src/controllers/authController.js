@@ -18,7 +18,7 @@ const {
  * Register new user
  */
 exports.register = async (req, res) => {
-  const client = await db.pool.connect();
+  const client = await db.connect();
 
   try {
     const { email, password, role, first_name, last_name, phone, date_of_birth, gym_id } = req.validatedBody;
@@ -114,7 +114,7 @@ exports.register = async (req, res) => {
  * Login user
  */
 exports.login = async (req, res) => {
-  const client = await db.pool.connect();
+  const client = await db.connect();
 
   try {
     const { email, password } = req.validatedBody;

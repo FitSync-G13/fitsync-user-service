@@ -123,7 +123,7 @@ const migrations = [
 ];
 
 async function runMigrations() {
-  const client = await db.pool.connect();
+  const client = await db.connect();
 
   try {
     await client.query('BEGIN');

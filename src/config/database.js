@@ -5,23 +5,34 @@ const logger = require('./logger');
 const getConnectionConfig = () => {
   if (process.env.DATABASE_URL) {
     // Use connection string if provided
+    // Check if SSL is requested in the connection string
+    const url = process.env.DATABASE_URL;
+    const hasSSL = url.includes('sslmode=');
+
+    if (hasSSL) {
+      return {
+        connectionString: url,
+        ssl: {
+          rejectUnauthorized: false  // Allow insecure certs for development
+        }
+      };
+    }
+
+    // Plain connection without SSL
     return {
-      connectionString: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: false  // Allow insecure certs for development
-      }
+      connectionString: url
     };
   }
 
-  // Build connection string from individual parameters
+  // Build connection from individual parameters (no SSL for local Docker)
   const { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
-  const connectionString = `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require`;
 
   return {
-    connectionString: connectionString,
-    ssl: {
-      rejectUnauthorized: false  // Allow insecure certs for development
-    }
+    host: DB_HOST,
+    port: DB_PORT,
+    database: DB_NAME,
+    user: DB_USER,
+    password: DB_PASSWORD
   };
 };
 
