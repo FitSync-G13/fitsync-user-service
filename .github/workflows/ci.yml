@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
 
+permissions:
+  id-token: write          # Required for requesting the JWT (AWS OIDC)
+  contents: read           # Required for actions/checkout
+  security-events: write   # Required for uploading Trivy scan results
+
 jobs:
   build-test:
     uses: FitSync-G13/fitsync-cd-templates/.github/workflows/ci-test-build-push.yml@master
