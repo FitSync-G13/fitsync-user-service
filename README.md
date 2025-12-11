@@ -216,3 +216,4 @@ See [fitsync-docker-compose](https://github.com/FitSync-G13/fitsync-docker-compo
 ## License
 
 MIT
+
