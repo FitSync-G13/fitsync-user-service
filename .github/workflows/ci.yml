@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-test:
-    uses: FitSync-G13/fitsync-ci-cd-templates/.github/workflows/ci-test-build-push.yml@main
+    uses: FitSync-G13/fitsync-cd-templates/.github/workflows/ci-test-build-push.yml@master
     with:
       service_name: user-service
       ecr_repository: fitsync-user-service
