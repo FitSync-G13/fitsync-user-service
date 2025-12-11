@@ -94,6 +94,114 @@ Service runs on http://localhost:3001
 - `PUT /api/users/:id` - Update user
 - `DELETE /api/users/:id` - Delete user
 
+## Testing
+
+### Test Framework
+
+This service uses **Jest** as the testing framework with the following setup:
+- Unit tests for core functionality
+- Mocked dependencies (database, Redis, logger)
+- Code coverage reporting
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode (re-runs on file changes)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+### Test Structure
+
+```
+tests/
+├── setup.js                    # Jest setup (env vars, global config)
+└── unit/
+    ├── jwt.test.js             # JWT utility tests
+    ├── authController.test.js  # Auth controller tests
+    ├── validation.test.js      # Validation middleware tests
+    └── auth.middleware.test.js # Auth middleware tests
+```
+
+### Test Suites
+
+| Test File | Tests | What's Covered |
+|-----------|-------|----------------|
+| `jwt.test.js` | 27 | Token generation (access/refresh), token verification, token hashing, Redis operations (store, revoke, validate), user caching |
+| `authController.test.js` | 20 | User registration, login flow, password hashing, token refresh, logout, error handling |
+| `validation.test.js` | 34 | All Joi schemas (register, login, refreshToken, updateProfile, changePassword, updateRole, createGym), field validation |
+| `auth.middleware.test.js` | 14 | JWT authentication middleware, role-based authorization, optional authentication |
+
+### Test Details
+
+#### JWT Utility Tests (`jwt.test.js`)
+- **Token Generation**: Validates JWT structure, payload content, issuer/audience claims
+- **Token Verification**: Tests valid tokens, expired tokens, invalid signatures, wrong issuer
+- **Token Hashing**: SHA256 consistency and uniqueness
+- **Redis Operations**: Store, revoke, validate refresh tokens; user cache operations
+
+#### Auth Controller Tests (`authController.test.js`)
+- **Register**: Success flow, duplicate user handling, password hashing, database error handling
+- **Login**: Valid credentials, invalid password, non-existent user, disabled accounts
+- **Refresh**: Valid refresh, expired tokens, revoked tokens, inactive users
+- **Logout**: Single device logout, all devices logout, error handling
+
+#### Validation Tests (`validation.test.js`)
+- **Schema validation**: Email format, password length, role values
+- **Optional fields**: Phone number format (E.164), date of birth (ISO), UUID validation
+- **Complex objects**: Nested address objects, arrays (amenities), URI validation
+
+#### Auth Middleware Tests (`auth.middleware.test.js`)
+- **authenticate**: Token extraction, verification, missing token handling
+- **authorize**: Role-based access control, multiple allowed roles
+- **optionalAuth**: Non-failing authentication for optional endpoints
+
+### Coverage Targets
+
+| Module | Statements | Functions | Lines |
+|--------|------------|-----------|-------|
+| `jwt.js` | 100% | 100% | 100% |
+| `validation.js` | 100% | 100% | 100% |
+| `auth.js` (middleware) | 88% | 100% | 88% |
+| `authController.js` | 95% | 100% | 95% |
+
+### Writing New Tests
+
+1. Create test files in `tests/unit/` with `.test.js` suffix
+2. Mock external dependencies (database, Redis) at the top of the file
+3. Use `beforeEach` to reset mocks between tests
+4. Follow the existing patterns for request/response mocking
+
+Example:
+```javascript
+jest.mock('../../src/config/database', () => ({
+  connect: jest.fn(),
+  query: jest.fn()
+}));
+
+describe('My Feature', () => {
+  let mockReq, mockRes;
+  
+  beforeEach(() => {
+    mockReq = { body: {}, headers: {} };
+    mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    };
+    jest.clearAllMocks();
+  });
+
+  it('should do something', async () => {
+    // Test implementation
+  });
+});
+```
+
 ## Database Schema
 
 Main tables:

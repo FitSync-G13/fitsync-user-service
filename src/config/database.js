@@ -1,38 +1,29 @@
 const { Pool } = require('pg');
 const logger = require('./logger');
 
-// Support both connection string and individual parameters
+// Database configuration using connection string
+// For production: Set DATABASE_URL with sslmode=require for TLS
+// For local dev: Set DATABASE_URL without sslmode for plain connection
 const getConnectionConfig = () => {
-  if (process.env.DATABASE_URL) {
-    // Use connection string if provided
-    // Check if SSL is requested in the connection string
-    const url = process.env.DATABASE_URL;
-    const hasSSL = url.includes('sslmode=');
+  const url = process.env.DATABASE_URL;
 
-    if (hasSSL) {
-      return {
-        connectionString: url,
-        ssl: {
-          rejectUnauthorized: false  // Allow insecure certs for development
-        }
-      };
-    }
+  if (!url) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
 
-    // Plain connection without SSL
+  // Enable SSL if sslmode is specified in connection string
+  if (url.includes('sslmode=')) {
     return {
-      connectionString: url
+      connectionString: url,
+      ssl: {
+        rejectUnauthorized: false  // DevOps will handle proper certs in production
+      }
     };
   }
 
-  // Build connection from individual parameters (no SSL for local Docker)
-  const { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD } = process.env;
-
+  // Plain connection for local development
   return {
-    host: DB_HOST,
-    port: DB_PORT,
-    database: DB_NAME,
-    user: DB_USER,
-    password: DB_PASSWORD
+    connectionString: url
   };
 };
 
@@ -41,7 +32,8 @@ const config = getConnectionConfig();
 const pool = new Pool(config);
 
 pool.on('connect', () => {
-  logger.info('Database connection established with TLS');
+  const sslStatus = config.ssl ? 'with TLS' : 'without TLS';
+  logger.info(`Database connection established ${sslStatus}`);
 });
 
 pool.on('error', (err) => {
