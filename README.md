@@ -87,12 +87,12 @@ Service runs on http://localhost:3001
 
 ## API Endpoints
 
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/refresh` - Refresh token
-- `GET /api/users/:id` - Get user by ID
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+- `POST  /api/auth/register` - Register new user
+- `POST  /api/auth/login` - Login user
+- `POST  /api/auth/refresh` - Refresh token
+- `GET  /api/users/:id` - Get user by ID
+- `PUT  /api/users/:id` - Update user
+- `DELETE  /api/users/:id` - Delete user
 
 ## Testing
 
